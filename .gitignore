@@ -1,4 +1,4 @@
 .DS_Store
 faces/
 core/__pycache__/
-
+data/department.db
