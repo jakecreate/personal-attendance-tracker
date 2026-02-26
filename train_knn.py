@@ -2,7 +2,6 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 os.environ['OMP_NUM_THREADS'] = '1'
 import sqlite3
-import math
 import torch
 import cv2
 import numpy as np
@@ -44,83 +43,6 @@ def get_embedding(face_tensor):
         embedding = model(face_tensor)
     return embedding.cpu().numpy()
 
-def check_match(embedding1, embedding2, threshold=0.6):
-    a = embedding1.flatten()
-    b = embedding2.flatten()
-    similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-    return similarity > threshold, similarity
-
-def live_recognition(avg_embs, emb_identity, threshold=0.6, skip_frames=3):
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FPS, 24)
-    print("starting live feed - press 'q' to quit")
-
-    known_faces = [(avg_emb, emb_identity[tuple(avg_emb[0])]) for avg_emb in avg_embs]
-    
-    frame_count = 0
-    last_boxes = None
-    last_labels = []
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        if frame_count % skip_frames == 0:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            boxes, _ = mtcnn.detect(frame_rgb)
-            last_boxes = boxes
-            last_labels = []
-
-            if boxes is not None:
-                face_tensors = mtcnn(frame_rgb)
-                
-                if face_tensors is not None:
-                    if face_tensors.ndimension() == 3:
-                        # mtcnn returns (3, 112, 112) -> (1, 3, 112, 112)
-                        face_tensors = face_tensors.unsqueeze(0)
-
-                    face_tensors = (face_tensors - 127.5) / 128.0
-                    
-                    with torch.no_grad():
-                        embeddings = model(face_tensors.to(device)).cpu().numpy()
-
-                    for i in range(len(embeddings)):
-                        current_emb = embeddings[i].reshape(1, -1)
-                        best_name = "Unknown"
-                        max_score = -1
-                        
-                        for avg_emb, name in known_faces:
-                            match, score = check_match(current_emb, avg_emb, threshold)
-                            if score > max_score:
-                                max_score = score
-                                if match:
-                                    best_name = name
-                        
-                        last_labels.append((best_name, max_score))
-
-        if last_boxes is not None:
-            for i, box in enumerate(last_boxes):
-                x1, y1, x2, y2 = box.astype(int)
-                
-                name = last_labels[i][0] if i < len(last_labels) else "Unknown"
-                score = last_labels[i][1] if i < len(last_labels) else 0.0
-                
-                color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                
-                text = f"{name} {score:.2f}"
-                cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
-        cv2.imshow('PAT', frame)
-        frame_count += 1
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-    
 def convert_data(rows):
     embedding_list = []
     name_list = []
