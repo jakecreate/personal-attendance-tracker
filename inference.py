@@ -1,8 +1,6 @@
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 os.environ['OMP_NUM_THREADS'] = '1'
-import sqlite3
-import math
 import torch
 import cv2
 import numpy as np
@@ -24,7 +22,7 @@ checkpoint = torch.load('model/best/068.ckpt', map_location=mps)
 mfn.load_state_dict(checkpoint['net_state_dict'])
 mfn.eval()
 
-def live_recognition(threshold=0.6):
+def live_recognition(threshold=0.65):
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FPS, 30)
     print("starting live feed - press 'q' to quit")
@@ -47,7 +45,6 @@ def live_recognition(threshold=0.6):
             box = boxes[idx]
 
             face_tensors = mtcnn(frame_rgb) # (3, 112, 112) 
-            
             if face_tensors is not None:
                 if face_tensors.ndimension() == 3:
                     face_tensors = face_tensors.unsqueeze(0) # (1, 3, 112, 112)
@@ -70,7 +67,7 @@ def live_recognition(threshold=0.6):
                     avg_sim = 0
 
                 candidate_name = le.inverse_transform([pred])[0]
-                name = candidate_name if avg_sim > 0.75 else "Unknown"
+                name = candidate_name if avg_sim > threshold else "Unknown"
 
             # display
             x1, y1, x2, y2 = box.astype(int)
