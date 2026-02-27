@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 import joblib
+from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from core.model import MobileFacenet
 from facenet_pytorch import MTCNN  
@@ -14,11 +15,11 @@ from facenet_pytorch import MTCNN
 device = torch.device('cpu')
 
 mtcnn = MTCNN(image_size=112, margin=20, device=device, post_process=False)
-model = MobileFacenet().to(device)
+mfn = MobileFacenet().to(device)
 
 checkpoint = torch.load('model/best/068.ckpt', map_location=device)
-model.load_state_dict(checkpoint['net_state_dict'])
-model.eval()
+mfn.load_state_dict(checkpoint['net_state_dict'])
+mfn.eval()
 
 def align_face(img_path):
     img_bgr = cv2.imread(img_path)
@@ -40,7 +41,7 @@ def align_face(img_path):
 
 def get_embedding(face_tensor):
     with torch.no_grad():
-        embedding = model(face_tensor)
+        embedding = mfn(face_tensor)
     return embedding.cpu().numpy()
 
 def convert_data(rows):
@@ -63,8 +64,13 @@ if __name__ == '__main__':
 
     X, y = convert_data(rows)
     print('Training KNN.')
-    knn = KNeighborsClassifier(n_neighbors=5, metric='cosine')
-    knn.fit(X, y)
-    joblib.dump(model, 'model/trained_knn/my_model.joblib')
+    encoder = LabelEncoder()
+    knn = KNeighborsClassifier(n_neighbors=7, metric='cosine')
+
+    y_encoded = encoder.fit_transform(y)
+    knn.fit(X, y_encoded)
+    
+    joblib.dump(knn, 'model/trained_knn/my_model.joblib')
+    joblib.dump(encoder, 'model/trained_knn/label_encoder.joblib')
     print('Traing complete & saved.')
 
