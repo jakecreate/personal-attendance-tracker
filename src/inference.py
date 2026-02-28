@@ -18,7 +18,7 @@ knn = joblib.load('model/trained_knn/my_model.joblib')
 le = joblib.load('model/trained_knn/label_encoder.joblib')
 
 
-checkpoint = torch.load('model/best/068.ckpt', map_location=mps)
+checkpoint = torch.load('model/trained_mfn/068.ckpt', map_location=mps)
 mfn.load_state_dict(checkpoint['net_state_dict'])
 mfn.eval()
 

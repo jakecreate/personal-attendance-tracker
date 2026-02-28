@@ -17,7 +17,7 @@ device = torch.device('cpu')
 mtcnn = MTCNN(image_size=112, margin=20, device=device, post_process=False)
 mfn = MobileFacenet().to(device)
 
-checkpoint = torch.load('model/best/068.ckpt', map_location=device)
+checkpoint = torch.load('model/trained_mfn/068.ckpt', map_location=device)
 mfn.load_state_dict(checkpoint['net_state_dict'])
 mfn.eval()
 
@@ -55,7 +55,7 @@ def convert_data(rows):
     return np.array(embedding_list), np.array(name_list)
 
 if __name__ == '__main__':
-    connection = sqlite3.connect('data/department.db')
+    connection = sqlite3.connect('../data/department.db')
     print('connected')
     cursor = connection.cursor()
     cursor.execute("SELECT name, embedding FROM course_section")

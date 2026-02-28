@@ -13,7 +13,7 @@ device = torch.device('cpu')
 mtcnn = MTCNN(image_size=112, margin=20, device=device, post_process=False)
 print('MTCNN loaded.')
 model = MobileFacenet().to(device)
-checkpoint = torch.load('model/best/068.ckpt', map_location=device)
+checkpoint = torch.load('model/trained_mfn/068.ckpt', map_location=device)
 model.load_state_dict(checkpoint['net_state_dict'])
 model.eval()
 print('MobileFaceNet loaded')
@@ -41,11 +41,11 @@ def get_embedding(face_tensor):
    
 if __name__ == '__main__':
     N_IMAGES = 10
-    path = './faces'
+    path = '../faces'
     names = [name for name in os.listdir(path) if not name.startswith('.')]
     print('student names:', names)
 
-    connection = sqlite3.connect('data/department.db')
+    connection = sqlite3.connect('../data/department.db')
     cursor = connection.cursor()
 
     cursor.execute('''
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     for name in names:
         embeddings = []
         for i in range(N_IMAGES):
-            face = align_face(f'./faces/{name}/{i+1}.png')
+            face = align_face(f'{path}/{name}/{i+1}.png')
             emb = get_embedding(face).tobytes()
             embeddings.append((name, emb))
         cursor.executemany('INSERT INTO course_section (name, embedding) VALUES (?, ?)', embeddings)
