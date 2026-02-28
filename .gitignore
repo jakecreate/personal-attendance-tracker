@@ -2,5 +2,5 @@
 faces/
 core/__pycache__/
 data/department.db
-model/trained_knn/my_model.joblib
-model/trained_knn/label_encoder.joblib
+src/model/trained_knn/my_model.joblib
+src/model/trained_knn/label_encoder.joblib
